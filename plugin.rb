@@ -2,7 +2,7 @@
 
 # name: discourse-extended-product-fields
 # about: Add custom product fields (category, name, price, image URL) to Discourse posts
-# version: 0.1
+# version: 0.2
 # authors: zane
 # url: https://azyex.com
 # required_version: 2.7.0
@@ -19,15 +19,13 @@ after_initialize do
   require_dependency 'post_creator'
 
   # -----------------------------
-  # 1️⃣ 重写 PostCreator#create 保存自定义字段
+  # 1️⃣ 定义扩展模块，使用 prepend 避免 monkey patching
   # -----------------------------
-  class ::PostCreator
-    alias_method :original_create, :create
-
+  module ::MyPluginModule::PostCreatorExtension
     def create
       Rails.logger.info("🔥 [PLUGIN DEBUG] PostCreator received opts: #{@opts.inspect}")
 
-      post = original_create
+      post = super
 
       if post && @opts
         %i[product_category product_name product_price product_img_url].each do |field|
@@ -46,7 +44,12 @@ after_initialize do
   end
 
   # -----------------------------
-  # 2️⃣ 允许 POST 接口接收自定义字段参数
+  # 2️⃣ 将模块 prepend 到 PostCreator
+  # -----------------------------
+  ::PostCreator.prepend(::MyPluginModule::PostCreatorExtension)
+
+  # -----------------------------
+  # 3️⃣ 允许 POST 接口接收自定义字段参数
   # -----------------------------
   add_permitted_post_create_param(:product_category)
   add_permitted_post_create_param(:product_name)
@@ -54,7 +57,7 @@ after_initialize do
   add_permitted_post_create_param(:product_img_url)
 
   # -----------------------------
-  # 3️⃣ 扩展 PostSerializer 让返回 JSON 包含自定义字段
+  # 4️⃣ 扩展 PostSerializer 返回 JSON
   # -----------------------------
   add_to_serializer(:post, :product_category) { object.custom_fields["product_category"] }
   add_to_serializer(:post, :product_name)     { object.custom_fields["product_name"] }
