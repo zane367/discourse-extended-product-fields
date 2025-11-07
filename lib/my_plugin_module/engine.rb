@@ -2,7 +2,7 @@
 
 module ::MyPluginModule
   class Engine < ::Rails::Engine
-    engine_name PLUGIN_NAME
+    engine_name "discourse_extended_product_fields"
     isolate_namespace MyPluginModule
     config.autoload_paths << File.join(config.root, "lib")
     scheduled_job_dir = "#{config.root}/app/jobs/scheduled"
